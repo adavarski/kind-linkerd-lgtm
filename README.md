@@ -1,7 +1,7 @@
 # LGTM
 
 
-# KinD: Linkerd LGTM stack multi-cluster LAB
+# KinD: Linkerd + LGTM Stack (Loki-Grafana-Tempo-Mimir) multi-cluster LAB
 
 
 ## Requirements
