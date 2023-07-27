@@ -1,5 +1,3 @@
-# LGTM
-
 
 # KinD: Linkerd + LGTM Stack (Loki-Grafana-Tempo-Mimir) multi-cluster LAB
 
