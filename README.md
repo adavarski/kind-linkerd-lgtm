@@ -1,8 +1,8 @@
 
-# KinD: Linkerd + LGTM Stack (Loki-Grafana-Tempo-Mimir) multi-cluster LAB
+## KinD: Linkerd + LGTM Stack (Loki-Grafana-Tempo-Mimir) multi-cluster LAB
 
 
-## Requirements
+### Requirements
 
 - Linux OS
 - [Docker](https://docs.docker.com/)
