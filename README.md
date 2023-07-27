@@ -11,6 +11,7 @@
 - [KinD](https://kind.sigs.k8s.io/)
 - [kubectl](https://kubernetes.io/docs/reference/kubectl/)
 - [helm](https://helm.sh/docs/intro/install/)
+- [Step CLI](https://smallstep.com/docs/step-cli)
 - [linkerd](https://linkerd.io/2.13/getting-started/#step-1-install-the-cli)
 - [linkerd-smi](https://linkerd.io/2.13/tasks/linkerd-smi/#cli)
 
@@ -126,13 +127,14 @@ for ctx in kind-lgtm-central kind-lgtm-remote; do
 done
 ```
 
+## Architecture
+
+![Architecture](architecture-0.png)
+
 In the Kubernetes world, the best way to monitor the cluster and everything running on it are via Prometheus. Microservices, especially those written in Go, could expose metrics in Prometheus format, and there is a vast collection of exporters for those applications that don't natively. For that reason, Mimir is the best way to consolidate metrics from multiple Kubernetes clusters (and the applications running on each of them).
 
 Loki is drastically easier to deploy and manage than the traditional ELK stack, which is why I consider it the best log aggregation solution. For similar reasons, Tempo for traces.
 
-## Architecture
-
-![Architecture](architecture-0.png)
 
 We will use Grafana Agent to send traces to Tempo on all environments to have multi-tenancy on traces, deployed as a `Deployment`.
 
@@ -168,15 +170,6 @@ The following is the list of Data Sources on the Central Grafana:
 * `Tempo Remote` to get traces from the remote cluster.
 * `Loki Remote` to get logs from the remote cluster.
 
-## Requirements
-
-* [Minikube](https://minikube.sigs.k8s.io/)
-* [Kubectl](https://kubernetes.io/docs/tasks/tools/)
-* [Helm](https://helm.sh/)
-* [Step CLI](https://smallstep.com/docs/step-cli)
-* [Linkerd CLI](https://linkerd.io/2.13/getting-started/#step-1-install-the-cli)
-
-The solution has been designed and tested only on an Intel-based Mac. You might need to change the scripts to run them on a different operating system.
 
 ## Start
 
