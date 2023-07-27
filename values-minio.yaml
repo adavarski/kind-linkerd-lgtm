@@ -1,0 +1,51 @@
+---
+rootUser: "root"
+rootPassword: "Adm1nAdm1n"
+
+mode: standalone
+
+environment:
+  MINIO_PROMETHEUS_JOB_ID: minio-update-prometheus-secret
+  MINIO_PROMETHEUS_URL: http://monitor-prometheus.observability.svc:9090
+
+persistence:
+  size: 20Gi
+
+resources:
+  requests:
+    memory: 512Mi
+
+users:
+- accessKey: admin
+  secretKey: Adm1nAdm1n
+  policy: consoleAdmin
+- accessKey: remote_user
+  secretKey: R3m0t3us3r
+  policy: readwrite
+
+buckets:
+- name: loki-data
+  policy: none
+  purge: false
+- name: loki-ruler
+  policy: none
+  purge: false
+- name: tempo-data
+  policy: none
+  purge: false
+- name: mimir-data
+  policy: none
+  purge: false
+- name: mimir-ruler
+  policy: none
+  purge: false
+
+postJob:
+  podAnnotations:
+    linkerd.io/inject: 'disabled'
+
+metrics:
+  serviceMonitor:
+    enabled: true
+    additionalLabels:
+      release: monitor

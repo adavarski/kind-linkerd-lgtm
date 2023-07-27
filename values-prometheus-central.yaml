@@ -1,0 +1,231 @@
+---
+prometheus:
+  prometheusSpec:
+    remoteWrite:
+    - url: http://mimir-distributor.mimir.svc:8080/api/v1/push
+      headers:
+        X-Scope-OrgID: _local
+
+prometheusOperator:
+  clusterDomain: central.cluster.local
+
+grafana:
+  adminPassword: Adm1nAdm1n
+  serviceAccount:
+    create: true
+    name: grafana-sa
+  resources: null
+  deploymentStrategy:
+    type: Recreate # Required when using a PVC
+  persistence:
+    type: pvc
+    enabled: true
+    accessModes: ["ReadWriteOnce"]
+    size: 1Gi
+  sidecar:
+    alerts:
+      searchNamespace: ALL
+    dashboards:
+      searchNamespace: ALL
+  grafana.ini:
+    feature_toggles:
+      enable: tempoSearch tempoBackendSearch tempoApmTable traceqlEditor
+    server:
+      domain: grafana.example.com # Ensure to use the correct domain / Will be used for Ingress
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+      - name: Tempo Remote
+        type: tempo
+        uid: tempo_remote_ds
+        access: proxy
+        url: http://tempo-query-frontend.tempo.svc:3100
+        isDefault: false
+        editable: true
+        jsonData:
+          lokiSearch:
+            datasourceUid: loki_remote_ds
+          nodeGraph:
+            enabled: true
+          serviceMap:
+            datasourceUid: mimir_remote_ds
+          tracesToLogs:
+            datasourceUid: loki_remote_ds
+          httpHeaderName1: X-Scope-OrgID
+          httpMethod: POST
+          manageAlerts: false
+        secureJsonData:
+          httpHeaderValue1: remote01
+      - name: Loki Remote
+        type: loki
+        uid: loki_remote_ds
+        access: proxy
+        url: http://loki-read.loki.svc:3100
+        isDefault: false
+        editable: true
+        jsonData:
+          derivedFields:
+          - name: TraceID
+            datasourceUid: tempo_remote_ds
+            matcherRegex: traceID=(\w+)
+            url: $${__value.raw}
+          httpHeaderName1: X-Scope-OrgID
+          httpMethod: POST
+          manageAlerts: false
+        secureJsonData:
+          httpHeaderValue1: remote01
+      - name: Mimir Remote
+        type: prometheus
+        uid: mimir_remote_ds
+        isDefault: false
+        editable: true
+        access: proxy
+        url: http://mimir-query-frontend.mimir.svc:8080/prometheus
+        jsonData:
+          httpHeaderName1: X-Scope-OrgID
+          httpMethod: POST
+          manageAlerts: false
+        secureJsonData:
+          httpHeaderValue1: remote01
+      - name: Tempo Local
+        type: tempo
+        uid: tempo_ds
+        access: proxy
+        url: http://tempo-query-frontend.tempo.svc:3100
+        isDefault: false
+        editable: true
+        jsonData:
+          lokiSearch:
+            datasourceUid: loki_ds
+          nodeGraph:
+            enabled: true
+          serviceMap:
+            datasourceUid: mimir_ds
+          tracesToLogs:
+            datasourceUid: loki_ds
+          httpHeaderName1: X-Scope-OrgID
+          httpMethod: POST
+          manageAlerts: false
+        secureJsonData:
+          httpHeaderValue1: _local
+      - name: Loki Local
+        type: loki
+        uid: loki_ds
+        access: proxy
+        url: http://loki-read.loki.svc:3100
+        isDefault: false
+        editable: true
+        jsonData:
+          derivedFields:
+          - name: TraceID
+            datasourceUid: tempo_ds # Might not work
+            matcherRegex: traceID=(\w+)
+            url: $${__value.raw}
+          httpHeaderName1: X-Scope-OrgID
+          httpMethod: POST
+          manageAlerts: false
+        secureJsonData:
+          httpHeaderValue1: _local
+      - name: Mimir Local
+        type: prometheus
+        uid: mimir_ds
+        isDefault: false
+        editable: true
+        access: proxy
+        url: http://mimir-query-frontend.mimir.svc:8080/prometheus
+        jsonData:
+          httpHeaderName1: X-Scope-OrgID
+          httpMethod: POST
+          manageAlerts: false
+        secureJsonData:
+          httpHeaderValue1: _local
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+  dashboards:
+    default:
+      # Linkerd Dashboards
+      # All these charts are hosted at https://grafana.com/grafana/dashboards/{id}
+      # All of them tested on Grafana 7.1 and need a scrape interval of 10 seconds.
+      top-line:
+        gnetId: 15474
+        revision: 3
+        datasource: prometheus
+      health:
+        gnetId: 15486
+        revision: 2
+        datasource: prometheus
+      kubernetes:
+        gnetId: 15479
+        revision: 2
+        datasource: prometheus
+      namespace:
+        gnetId: 15478
+        revision: 2
+        datasource: prometheus
+      deployment:
+        gnetId: 15475
+        revision: 5
+        datasource: prometheus
+      pod:
+        gnetId: 15477
+        revision: 2
+        datasource: prometheus
+      service:
+        gnetId: 15480
+        revision: 2
+        datasource: prometheus
+      route:
+        gnetId: 15481
+        revision: 2
+        datasource: prometheus
+      authority:
+        gnetId: 15482
+        revision: 2
+        datasource: prometheus
+      cronjob:
+        gnetId: 15483
+        revision: 2
+        datasource: prometheus
+      job:
+        gnetId: 15487
+        revision: 2
+        datasource: prometheus
+      daemonset:
+        gnetId: 15484
+        revision: 2
+        datasource: prometheus
+      replicaset:
+        gnetId: 15491
+        revision: 2
+        datasource: prometheus
+      statefulset:
+        gnetId: 15493
+        revision: 2
+        datasource: prometheus
+      replicationcontroller:
+        gnetId: 15492
+        revision: 2
+        datasource: prometheus
+      prometheus:
+        gnetId: 15489
+        revision: 2
+        datasource: prometheus
+      prometheus-benchmark:
+        gnetId: 15490
+        revision: 2
+        datasource: prometheus
+      multicluster:
+        gnetId: 15488
+        revision: 2
+        datasource: prometheus

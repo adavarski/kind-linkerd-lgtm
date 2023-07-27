@@ -1,0 +1,84 @@
+#!/bin/bash
+
+set -euo pipefail
+trap 's=$?; echo >&2 "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
+
+for cmd in "helm" "kubectl"; do
+  type $cmd >/dev/null 2>&1 || { echo >&2 "$cmd required but it's not installed; aborting."; exit 1; }
+done
+
+CERT_ISSUER_ID=${CERT_ISSUER_ID-}
+DOMAIN=${DOMAIN-}
+
+if [[ "$CERT_ISSUER_ID" == "" ]]; then
+  echo "CERT_ISSUER_ID env-var required"
+  exit 1
+fi
+
+if [[ "$DOMAIN" == "" ]]; then
+  echo "DOMAIN env-var required"
+  exit 1
+fi
+
+CERT_EXPIRY_FILE=cert-expiry-date.txt
+if [ ! -f $CERT_EXPIRY_FILE ]; then
+  echo "$CERT_EXPIRY_FILE not found; please run deploy-certs.sh"
+  exit 1
+fi
+CERT_EXPIRY_DATE=$(cat $CERT_EXPIRY_FILE)
+
+if [ ! -f ca.crt ]; then
+  echo "ca.crt not found; please run deploy-certs.sh"
+  exit 1
+fi
+
+if [ ! -f "$CERT_ISSUER_ID.crt" ]; then
+  echo "$CERT_ISSUER_ID.crt not found; please run deploy-certs.sh"
+  exit 1
+fi
+
+echo "Deploying Linkerd CRDs"
+helm upgrade --install linkerd-crds linkerd/linkerd-crds \
+  --namespace linkerd --create-namespace
+
+echo "Deploying Linkerd"
+helm upgrade --install linkerd-control-plane linkerd/linkerd-control-plane \
+  --namespace linkerd \
+  --set clusterDomain=$DOMAIN \
+  --set identityTrustDomain=$DOMAIN \
+  --set-file identityTrustAnchorsPEM=ca.crt \
+  --set-file identity.issuer.tls.crtPEM=$CERT_ISSUER_ID.crt \
+  --set-file identity.issuer.tls.keyPEM=$CERT_ISSUER_ID.key \
+  -f values-linkerd.yaml \
+  --wait
+
+echo "Update PodMonitor resources"
+for obj in "controller" "proxy" "service-mirror"; do
+  kubectl label -n linkerd podmonitor/linkerd-$obj release=monitor
+done
+
+echo "Deploying Linkerd-Viz"
+helm upgrade --install linkerd-viz linkerd/linkerd-viz \
+  --namespace linkerd-viz --create-namespace \
+  --set clusterDomain=$DOMAIN \
+  --set identityTrustDomain=$DOMAIN \
+  --set grafana.enabled=false \
+  --set prometheus.enabled=false \
+  --set prometheusUrl=http://monitor-prometheus.observability.svc:9090 \
+  --wait
+
+echo "Deploying Linkerd-Jaeger via Grafana Agent"
+helm upgrade --install linkerd-jaeger linkerd/linkerd-jaeger \
+  --namespace linkerd-jaeger --create-namespace \
+  --set clusterDomain=$DOMAIN \
+  --set collector.enabled=false \
+  --set jaeger.enabled=false \
+  --set webhook.collectorSvcAddr=grafana-agent.observability.svc:55678 \
+  --set webhook.collectorSvcAccount=grafana-agent \
+  --wait
+
+echo "Deploying Linkerd Multicluster"
+helm upgrade --install linkerd-multicluster linkerd/linkerd-multicluster \
+  --namespace linkerd-multicluster --create-namespace \
+  --set identityTrustDomain=$DOMAIN \
+  --wait

@@ -1,0 +1,70 @@
+# Warning: there won't be any resource requests/limits for any container
+---
+nameOverride: monitor
+fullnameOverride: monitor
+cleanPrometheusOperatorObjectNames: true
+
+defaultRules:
+  rules:
+    etcd: false
+    kubeControllerManager: false
+    kubeScheduler: false
+
+kubeControllerManager:
+  enabled: false
+
+kubeEtcd:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
+alertmanager: # Required to be notified on alerts managed by Prometheus
+  serviceAccount:
+    create: true
+    name: alertmanager-sa
+  alertmanagerSpec:
+    resources: null
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1Gi
+
+prometheusOperator:
+  serviceAccount:
+    create: true
+    name: promoperator-sa
+  admissionWebhooks:
+    patch:
+      podAnnotations:
+        linkerd.io/inject: 'disabled'
+  prometheusConfigReloader:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 50m
+        memory: 50Mi
+
+prometheus:
+  serviceAccount:
+    create: true
+    name: prometheus-sa
+  prometheusSpec:
+    enableRemoteWriteReceiver: true # For Tempo Metrics Generator
+    enableFeatures:
+    - exemplar-storage
+    scrapeInterval: 30s
+    retention: 30d
+    resources: null
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
