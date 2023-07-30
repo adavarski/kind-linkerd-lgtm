@@ -292,4 +292,4 @@ $ kind delete cluster --name=lgtm-remote
 
 ### Credits: 
 https://github.com/agalue/LGTM-PoC
-### Todo : Fix Tempo & Mimir 
+### Todo : Fix Linkerd, Tempo & Mimir 
