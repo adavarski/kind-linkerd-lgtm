@@ -293,3 +293,4 @@ $ kind delete cluster --name=lgtm-remote
 ### Credits: 
 https://github.com/agalue/LGTM-PoC
 ### Todo : Fix Linkerd, Tempo & Mimir 
+Ref(Linkerd): https://github.com/adavarski/kind-linkerd-multicluster
