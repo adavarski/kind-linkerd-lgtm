@@ -1,5 +1,5 @@
 
-## KinD: Linkerd + Grafana LGTM Stack (Loki-Grafana-Tempo-Mimir) multi-cluster LAB
+## (WIP) KinD: Linkerd + Grafana LGTM Stack (Loki-Grafana-Tempo-Mimir) multi-cluster LAB
 
 
 ### Requirements
